@@ -1,32 +1,27 @@
-=============
-django-hstore
-=============
+# django-hstore
 
-Django-hstore is a niche library which integrates the `hstore`_ extension of
-PostgreSQL into Django, assuming one is using Django 1.2+, PostgreSQL 9.0+, and
-Psycopg 2.3+.
+Django-hstore is a niche library which integrates the [hstore](http://www.postgresql.org/docs/9.0/interactive/hstore.html) extension of PostgreSQL into Django,
+assuming one is using Django 1.2+, PostgreSQL 9.0+, and Psycopg 2.3+.
 
-Limitations
-===========
+## Fork features
 
-- Due to how Django implements its ORM, you will need to use the custom
-  ``postgresql_psycopg2`` backend defined in this package, which naturally will
-  prevent you from dropping in other django extensions which require a custom
-  backend (unless you fork and combine).
-- PostgreSQL's implementation of hstore has no concept of type; it stores a
-  mapping of string keys to string values. This library makes no attempt to
-  coerce keys or values to strings.
+This fork aims to support data-types beyond strings.  To do so, all values entered in to / retrived from django-hstore are serialized to / from JSON.
 
-Running the tests
-=================
+## Limitations
 
-Assuming one has the dependencies installed, and a PostgreSQL 9.0+ server up and
-running::
+- Due to how Django implements its ORM, you will need to use the custom ``postgresql_psycopg2`` backend
+  defined in this package, which naturally will prevent you from dropping in other django extensions
+  which require a custom backend (unless you fork and combine).
+- PostgreSQL's implementation of hstore has no concept of type; it stores a mapping of string keys to
+  string values. ~~This library makes no attempt to coerce keys or values to strings.~~ As such, this library encodes all values to JSON.
 
-    python setup.py test
+## Running the tests
 
-Usage
-=====
+Assuming one has the dependencies installed as well as nose, and a PostgreSQL 9.0+ server up and running::
+
+    DB_USER=<username> HSTORE_SQL=<path-to-contrib/hstore.sql> ./runtests
+
+## Usage
 
 First, update your settings module to specify the custom database backend::
 
@@ -36,24 +31,15 @@ First, update your settings module to specify the custom database backend::
             ...
         }
     }
-    
-**Note to South users:** If you keep getting errors like `There is no South
-database module 'south.db.None' for your database.`, add the following to
-`settings.py`::
-
-    SOUTH_DATABASE_ADAPTERS = {'default': 'south.db.postgresql_psycopg2'}
 
 The library provides three principal classes:
 
-``django_hstore.hstore.DictionaryField``
-    An ORM field which stores a mapping of string key/value pairs in an hstore
-    column.
-``django_hstore.hstore.ReferencesField``
-    An ORM field which builds on DictionaryField to store a mapping of string
-    keys to django object references, much like ForeignKey.
-``django_hstore.hstore.HStoreManager``
-    An ORM manager which provides much of the query functionality of the
-    library.
+* ``django_hstore.hstore.DictionaryField``
+    * An ORM field which stores a mapping of string key/value pairs in an hstore column.
+* ``django_hstore.hstore.ReferencesField``
+    * An ORM field which builds on DictionaryField to store a mapping of string keys to django object references, much like ForeignKey.
+* ``django_hstore.hstore.Manager``
+    * An ORM manager which provides much of the query functionality of the library.
 
 Model definition is straightforward::
 
@@ -62,8 +48,8 @@ Model definition is straightforward::
 
     class Something(models.Model):
         name = models.CharField(max_length=32)
-        data = hstore.DictionaryField()
-        objects = hstore.HStoreManager()
+        data = hstore.DictionaryField(db_index=True)
+        objects = hstore.Manager()
 
         def __unicode__(self):
             return self.name
@@ -111,8 +97,5 @@ You can also take advantage of some db-side functionality by using the manager::
     # remove a key/value pair from an hstore field
     >>> Something.objects.filter(name='something').hremove('data', 'b')
 
-The hstore methods on manager pass all keyword arguments aside from ``attr`` and
-``key`` to ``.filter()``.
-
-.. _hstore: http://www.postgresql.org/docs/9.1/interactive/hstore.html
-
+The hstore methods on manager pass all keyword arguments aside from ``attr`` and ``key``
+to ``.filter()``.

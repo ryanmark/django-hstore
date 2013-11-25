@@ -1,3 +1,6 @@
+try: import simplejson as json
+except ImportError: import json
+
 from django.db import models, connection
 from django.utils.translation import ugettext_lazy as _
 from django_hstore import forms, util
@@ -19,6 +22,23 @@ class HStoreDictionary(dict):
         queryset = self.instance._base_manager.get_query_set()
         queryset.filter(pk=self.instance.pk).hremove(self.field.name, keys)
 
+    def __setitem__(self, key, value):
+        """
+        Encode all values as json on write.
+        """
+        value = json.dumps(value)
+        return super(HStoreDictionary, self).__setitem__(key, value)
+
+    def __getitem__(self, key):
+        """
+        Attempt to decode value from json on read.
+        """
+        value = super(HStoreDictionary, self).__getitem__(key)
+        try:
+            value = json.loads(value)
+        except TypeError:
+            pass
+        return value
 
 class HStoreDescriptor(models.fields.subclassing.Creator):
     def __set__(self, obj, value):
