@@ -85,8 +85,8 @@ class DictionaryField(HStoreField):
         return super(DictionaryField, self).get_prep_value(value)
 
     def to_python(self, value):
-        value = util.json_unserialize_dict(value)
-        return super(DictionaryField, self).to_python(value)
+        value = super(DictionaryField, self).to_python(value)
+        return util.json_unserialize_dict(value)
 
 
 class ReferencesField(HStoreField):
