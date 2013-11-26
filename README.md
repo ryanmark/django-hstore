@@ -7,6 +7,11 @@ assuming one is using Django 1.2+, PostgreSQL 9.0+, and Psycopg 2.3+.
 
 This fork aims to support data-types beyond strings.  To do so, all values entered in to / retrived from django-hstore are serialized to / from JSON.
 
+### Summary of work
+
+* All data entered in to a `hstore.DictionaryField` is serialized upon entrance into the db via its `get_prep_value()` method and unserialized upon retrieval via its `to_python()` method.
+* The object manager `filter` method serializes any argument in which the field name is `data`.  This was a bit of a kludge fix to avoid serializing non-hstore fields.
+
 ## Limitations
 
 - Due to how Django implements its ORM, you will need to use the custom ``postgresql_psycopg2`` backend
