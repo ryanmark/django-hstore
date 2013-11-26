@@ -22,7 +22,6 @@ def identify_instance(instance):
 
 
 def serialize_references(references):
-    import ipdb; ipdb.set_trace();
     refs = {}
     for key, instance in references.iteritems():
         if not isinstance(instance, basestring):
@@ -34,7 +33,6 @@ def serialize_references(references):
 
 
 def unserialize_references(references):
-    import ipdb; ipdb.set_trace();
     refs = {}
     for key, reference in references.iteritems():
         if isinstance(reference, basestring):
