@@ -1,3 +1,6 @@
+try: import simplejson as json
+except ImportError: import json
+
 from django.core.exceptions import ObjectDoesNotExist
 
 
@@ -19,6 +22,7 @@ def identify_instance(instance):
 
 
 def serialize_references(references):
+    import ipdb; ipdb.set_trace();
     refs = {}
     for key, instance in references.iteritems():
         if not isinstance(instance, basestring):
@@ -30,6 +34,7 @@ def serialize_references(references):
 
 
 def unserialize_references(references):
+    import ipdb; ipdb.set_trace();
     refs = {}
     for key, reference in references.iteritems():
         if isinstance(reference, basestring):
@@ -38,3 +43,23 @@ def unserialize_references(references):
             refs[key] = reference
     else:
         return refs
+
+
+def json_serialize_dict(dikt):
+    return dict([(k, json_serialize_value(v)) for k,v in dikt.items()])
+
+
+def json_unserialize_dict(dikt):
+    try:
+        dikt = dict([(k, json_unserialize_value(v)) for k,v in dikt.items()])
+    except TypeError:
+        pass
+    return dikt
+
+
+def json_serialize_value(value):
+    return json.dumps(value)
+
+
+def json_unserialize_value(value):
+    return json.loads(value)

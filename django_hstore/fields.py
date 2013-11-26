@@ -1,6 +1,3 @@
-try: import simplejson as json
-except ImportError: import json
-
 from django.db import models, connection
 from django.utils.translation import ugettext_lazy as _
 from django_hstore import forms, util
@@ -11,7 +8,6 @@ class HStoreDictionary(dict):
     A dictionary subclass which implements hstore support.
     """
     def __init__(self, value=None, field=None, instance=None, **params):
-        value = dict([(k,json.dumps(v)) for k,v in value.items()])
         super(HStoreDictionary, self).__init__(value, **params)
         self.field = field
         self.instance = instance
@@ -23,23 +19,6 @@ class HStoreDictionary(dict):
         queryset = self.instance._base_manager.get_query_set()
         queryset.filter(pk=self.instance.pk).hremove(self.field.name, keys)
 
-    def __setitem__(self, key, value):
-        """
-        Encode all values as json on write.
-        """
-        value = json.dumps(value)
-        return super(HStoreDictionary, self).__setitem__(key, value)
-
-    def __getitem__(self, key):
-        """
-        Attempt to decode value from json on read.
-        """
-        value = super(HStoreDictionary, self).__getitem__(key)
-        try:
-            value = json.loads(value)
-        except TypeError:
-            pass
-        return value
 
 class HStoreDescriptor(models.fields.subclassing.Creator):
     def __set__(self, obj, value):
@@ -100,6 +79,14 @@ class DictionaryField(HStoreField):
 
     def _value_to_python(self, value):
         return value
+
+    def get_prep_value(self, value):
+        value = util.json_serialize_dict(value)
+        return super(DictionaryField, self).get_prep_value(value)
+
+    def to_python(self, value):
+        value = util.json_unserialize_dict(value)
+        return super(DictionaryField, self).to_python(value)
 
 
 class ReferencesField(HStoreField):
