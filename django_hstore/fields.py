@@ -1,12 +1,7 @@
-try:
-    import simplejson as json
-except ImportError:
-    import json
-
 from django.db import models, connection
 from django.utils.translation import ugettext_lazy as _
 
-from django_hstore import forms, util, exceptions
+from django_hstore import forms, util
 
 
 class HStoreDictionary(dict):
@@ -14,47 +9,9 @@ class HStoreDictionary(dict):
     A dictionary subclass which implements hstore support.
     """
     def __init__(self, value=None, field=None, instance=None, **params):
-        if isinstance(value, basestring):
-            try:
-                value = json.loads(value)
-            except json.scanner.JSONDecodeError as e:
-                raise exceptions.HStoreDictionaryException(
-                    _('HStoreDictionary accepts only dictionaries or valid json formatted strings.\n%s') % e.message,
-                    json_error_message = e.message
-                )
-        
-        # ensure values are acceptable
-        for key,val in value.iteritems():
-            value[key] = self.ensure_acceptable_value(val)
-        
         super(HStoreDictionary, self).__init__(value, **params)
         self.field = field
         self.instance = instance
-    
-    def ensure_acceptable_value(self, value):
-        """
-        - ensure booleans, integers, floats, lists and dicts are converted to string
-        - convert True and False objects to "true" and "false" so they can be
-          decoded back with the json library if needed
-        - convert lists and dictionaries to json formatted strings
-        - leave alone all other objects because they might be representation of django models
-        """
-        if isinstance(value, bool):
-            return unicode(value).lower()
-        elif isinstance(value, int) or isinstance(value, float):
-            return unicode(value)
-        elif isinstance(value, list) or isinstance(value, dict):
-            return json.dumps(value)
-        else:
-            return value
-    
-    def __setitem__(self, *args, **kwargs):
-        args = (args[0], self.ensure_acceptable_value(args[1]))
-        super(HStoreDictionary, self).__setitem__(*args, **kwargs)
-    
-    def update(self, *args, **kwargs):
-        for key, value in dict(*args, **kwargs).iteritems():
-            self[key] = value
 
     def remove(self, keys):
         """
@@ -62,18 +19,6 @@ class HStoreDictionary(dict):
         """
         queryset = self.instance._base_manager.get_query_set()
         queryset.filter(pk=self.instance.pk).hremove(self.field.name, keys)
-
-    def __str__(self):
-        if self:
-            return json.dumps(self)
-        else:
-            return ''
-
-    def __unicode__(self):
-        if self:
-            return json.dumps(self)
-        else:
-            return ''
 
 
 class HStoreReferenceDictionary(HStoreDictionary):
