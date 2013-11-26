@@ -79,7 +79,13 @@ class HStoreField(models.Field):
             if callable(self.default):
                 return self.default()
             return self.default
-        if (not self.empty_strings_allowed or (self.null and not connection.features.interprets_empty_strings_as_nulls)):
+        if (
+            not self.empty_strings_allowed or 
+                (
+                self.null
+                and not connection.features.interprets_empty_strings_as_nulls
+                )
+            ):
             return None
         return {}
 
