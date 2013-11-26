@@ -1,5 +1,6 @@
 from django.db import models
-from django_hstore.query import HStoreQuerySet
+from django.contrib.gis.db import models as geo_models
+from django_hstore.query import HStoreQuerySet, HStoreGeoQuerySet
 
 from django_hstore import util
 
@@ -46,3 +47,11 @@ class HStoreManager(models.Manager):
             if (len(k.split('__')) > 1) and (k.split('__')[0] in self.hstore_fieldnames):
                 kwargs[k] = util.json_serialize_dict(v)
         return kwargs
+
+
+class HStoreGeoManager(geo_models.GeoManager, HStoreManager):
+    """
+    Object manager combining Geodjango and hstore.
+    """
+    def get_query_set(self):
+        return HStoreGeoQuerySet(self.model, using=self._db)

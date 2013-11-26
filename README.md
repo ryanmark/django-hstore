@@ -1,11 +1,20 @@
 # django-hstore
 
-Django-hstore is a niche library which integrates the [hstore](http://www.postgresql.org/docs/9.0/interactive/hstore.html) extension of PostgreSQL into Django,
-assuming one is using Django 1.2+, PostgreSQL 9.0+, and Psycopg 2.3+.
+Django-hstore is a niche library which integrates the [hstore](http://www.postgresql.org/docs/9.0/interactive/hstore.html) extension of PostgreSQL into Django.
+
+Dependencies:
+
+* **Django 1.2+**
+* **PostgreSQL 9.0+**
+* **Psycopg 2.3+**.
 
 ## Fork features
 
-This fork aims to support data-types beyond strings.  To do so, all values entered in to / retrived from django-hstore are serialized to / from JSON.
+This fork aims to:
+
+* support data-types beyond strings.  To do so, all values entered in to / retrived from django-hstore are serialized to / from JSON.
+* This fork aims to support spatial querysets. Now supported only Postgis backend.
+
 
 ### Summary of work
 
@@ -22,9 +31,24 @@ This fork aims to support data-types beyond strings.  To do so, all values enter
 
 ## Running the tests
 
-Assuming one has the dependencies installed as well as nose, and a PostgreSQL 9.0+ server up and running::
+Assuming one has the dependencies installed, and a **PostgreSQL 9.0+** server up and
+running::
 
-    DB_USER=<username> HSTORE_SQL=<path-to-contrib/hstore.sql> ./runtests
+    python setup.py test
+
+You might need to tweak the DB settings according to your DB configuration.
+You can copy the file settings.py and create **local_settings.py**, which will
+be used instead of the default settings.py.
+
+If after running this command you get an **error** saying::
+    
+    type "hstore" does not exist
+
+Try this::
+
+    psql template1 -c 'create extension hstore;'
+
+More details here: [PostgreSQL error type hstore does not exist](http://clarkdave.net/2012/09/postgresql-error-type-hstore-does-not-exist/)
 
 ## Usage
 
@@ -32,10 +56,18 @@ First, update your settings module to specify the custom database backend::
 
     DATABASES = {
         'default': {
-            'ENGINE': 'django_hstore.postgresql_psycopg2',
+            'ENGINE': 'django_hstore.backends.postgresql_psycopg2',
+            # or
+            # 'ENGINE': 'django_hstore.backends.postgis',
             ...
         }
     }
+
+**Note to South users:** If you keep getting errors like `There is no South
+database module 'south.db.None' for your database.`, add the following to
+`settings.py`::
+
+    SOUTH_DATABASE_ADAPTERS = {'default': 'south.db.postgresql_psycopg2'}
 
 The library provides three principal classes:
 
@@ -61,29 +93,51 @@ Model definition is straightforward::
 
 You then treat the ``data`` field as simply a dictionary of string pairs::
 
-    instance = Something.objects.create(name='something', data={'a': '1', 'b': '2'})
-    assert instance.data['a'] == '1'
+    instance = Something.objects.create(name='something', data={'a': 1, 'b': '2'})
+    assert instance.data['a'] == 1
 
     empty = Something.objects.create(name='empty')
     assert empty.data == {}
 
-    empty.data['a'] = '1'
+    empty.data['a'] = 1
     empty.save()
-    assert Something.objects.get(name='something').data['a'] == '1'
+    assert Something.objects.get(name='something').data['a'] == 1
 
 You can issue indexed queries against hstore fields::
 
     # equivalence
-    Something.objects.filter(data={'a': '1', 'b': '2'})
+    Something.objects.filter(data={'a': 1, 'b': '2'})
+
+    # comparision
+    Something.objects.filter(data__gt={'a': 1})
+    Something.objects.filter(data__gte={'a': 1})
+    Something.objects.filter(data__lt={'a': '2'})
+    Something.objects.filter(data__lte={'a': '2'})
 
     # subset by key/value mapping
-    Something.objects.filter(data__contains={'a': '1'})
+    Something.objects.filter(data__contains={'a': 1})
+
+    # subset by list of some key values
+    Something.objects.filter(data__contains={'a': [1, '2']})
 
     # subset by list of keys
     Something.objects.filter(data__contains=['a', 'b'])
 
     # subset by single key
     Something.objects.filter(data__contains='a')
+
+You can still do classic django "contains" lookups as you would normally do for normal text
+fields if you were looking for a particular string. In this case, the HSTORE field
+will be converted to text and the lookup will be performed on all the keys and all the values::
+
+    Something.objects.create(data={ 'some_key': 'some crazy Value' })
+
+    # classic text lookup (look up for occurence of string in all the keys)
+    Something.objects.filter(data__contains='crazy')
+    Something.objects.filter(data__contains='some_key')
+    # classic case insensitive text looup
+    Something.objects.filter(data__icontains='value')
+    Something.objects.filter(data__icontains='SOME_KEY')
 
 You can also take advantage of some db-side functionality by using the manager::
 
