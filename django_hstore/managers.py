@@ -32,7 +32,7 @@ class HStoreManager(models.Manager):
 
     def exclude(self, *args, **kwargs):
         kwargs = self._serialize_hstore_arguments(**kwargs)
-        return super(HStoreManager, self).filter(*args, **kwargs)
+        return super(HStoreManager, self).exclude(*args, **kwargs)
 
     def _serialize_hstore_arguments(self, *args, **kwargs):
         for k,v in kwargs.items():
