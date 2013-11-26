@@ -10,7 +10,7 @@ This fork aims to support data-types beyond strings.  To do so, all values enter
 ### Summary of work
 
 * All data entered in to a `hstore.DictionaryField` is serialized upon entrance into the db via its `get_prep_value()` method and unserialized upon retrieval via its `to_python()` method.
-* The object manager `filter` method serializes any argument in which the field name is `data`.  This was a bit of a kludge fix to avoid serializing non-hstore fields.
+* When declaring the `django_hstore.hstore.Manager` field, you can optionally pass in a tuple of fieldname strings indicating which fields are of type `hstoreDictionaryField`. This allows the object manager to serialize any arguments provided when using the `filter` or `exclude` method of the `django_hstore.hstore.Manager` object.
 
 ## Limitations
 
