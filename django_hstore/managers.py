@@ -1,6 +1,8 @@
 from django.db import models
 from django_hstore.query import HStoreQuerySet
 
+from django_hstore import util
+
 
 class HStoreManager(models.Manager):
     """
@@ -20,3 +22,11 @@ class HStoreManager(models.Manager):
     def hslice(self, attr, keys, **params):
         return self.filter(**params).hslice(attr, keys)
 
+    def filter(self, *args, **kwargs):
+        for k,v in kwargs.items():
+            # Only serialize for filters with double underscores (data__contains={'a': '1'}),
+            # rather than equivalence filters (data={'a': '1', 'b': '2'}) where serialization
+            # takes place in DictionaryField.get_prep_value().
+            if len(k.split('__')) > 1:
+                kwargs[k] = util.json_serialize_dict(v)
+        return super(HStoreManager, self).filter(*args, **kwargs)
