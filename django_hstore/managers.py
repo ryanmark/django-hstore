@@ -27,22 +27,9 @@ class HStoreManager(models.Manager):
         return self.filter(**params).hslice(attr, keys)
 
     def filter(self, *args, **kwargs):
-        kwargs = self._serialize_hstore_arguments(**kwargs)
+        kwargs = util.serialize_queryset_arguments(self.hstore_fieldnames, **kwargs)
         return super(HStoreManager, self).filter(*args, **kwargs)
 
     def exclude(self, *args, **kwargs):
-        kwargs = self._serialize_hstore_arguments(**kwargs)
+        kwargs = util.serialize_queryset_arguments(self.hstore_fieldnames, **kwargs)
         return super(HStoreManager, self).exclude(*args, **kwargs)
-
-    def _serialize_hstore_arguments(self, *args, **kwargs):
-        for k,v in kwargs.items():
-            # Only serialize for filters where both:
-            # a) the filter has double underscores (data__contains={'a': 1}), rather
-            #    than equivalence filters (data={'a': 1, 'b': 2}) where serialization
-            #    takes place in DictionaryField.get_prep_value().
-            # b) the field being used for the filter is provided as a string in the 
-            #    hstore_fieldnames tuple used when declaring the manager in the object
-            #    model.
-            if (len(k.split('__')) > 1) and (k.split('__')[0] in self.hstore_fieldnames):
-                kwargs[k] = util.json_serialize_dict(v)
-        return kwargs

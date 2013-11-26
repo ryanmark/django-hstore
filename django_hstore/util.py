@@ -61,3 +61,17 @@ def json_serialize_value(value):
 
 def json_unserialize_value(value):
     return json.loads(value)
+
+
+def serialize_queryset_arguments(hstore_fieldnames, *args, **kwargs):
+    for k,v in kwargs.items():
+        # Only serialize for filters where both:
+        # a) the filter has double underscores (data__contains={'a': 1}), rather
+        #    than equivalence filters (data={'a': 1, 'b': 2}) where serialization
+        #    takes place in DictionaryField.get_prep_value().
+        # b) the field being used for the filter is provided as a string in the 
+        #    hstore_fieldnames tuple used when declaring the manager in the object
+        #    model.
+        if (len(k.split('__')) > 1) and (k.split('__')[0] in hstore_fieldnames):
+            kwargs[k] = json_serialize_dict(v)
+    return kwargs
