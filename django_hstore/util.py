@@ -67,18 +67,13 @@ def json_unserialize_dict(dikt):
 
 
 def json_serialize_value(value):
-    if isinstance(value, datetime.datetime):
-        value = datetime.datetime.strftime(value, '%Y-%m-%d %H:%M:%S.%f')
+    value = stringify_datetime(value)
     return json.dumps(value)
 
 
 def json_unserialize_value(value):
     value = json.loads(value)
-    if type(value) is str and len(value) is 26:
-        try:
-            value = datetime.datetime.strptime(value, '%Y-%m-%d %H:%M:%S.%f')
-        except ValueError:
-            pass
+    value = destringify_datetime(value)
     return value
 
 
@@ -98,3 +93,36 @@ def serialize_queryset_arguments(hstore_fieldnames, *args, **kwargs):
             if isinstance(v, int) or isinstance(v, float):
                 kwargs[k] = json_serialize_value(v)
     return kwargs
+
+
+def stringify_datetime(value):
+    if isinstance(value, datetime.date):
+        value = datetime.date.strftime(value, '%Y-%m-%d')
+    elif isinstance(value, datetime.time):
+        value = datetime.time.strftime(value, '%H:%M:%S.%f')
+    elif isinstance(value, datetime.datetime):
+        value = datetime.datetime.strftime(value, '%Y-%m-%d %H:%M:%S.%f')
+    return value
+
+
+def destringify_datetime(value):
+    if type(value) is str:
+        # Try Datetime
+        if len(value) is 26:
+            try:
+                value = datetime.datetime.strptime(value, '%Y-%m-%d %H:%M:%S.%f')
+            except ValueError:
+                pass
+        # Try Date
+        elif len(value) is 10:
+            try:
+                value = datetime.datetime.strptime(value, '%Y-%m-%d').date()
+            except ValueError:
+                pass
+        # Try Time
+        elif len(value) is 15:
+            try:
+                value = datetime.datetime.strptime(value, '%H:%M:%S.%f').time()
+            except ValueError:
+                pass
+    return value
