@@ -1,6 +1,7 @@
+import datetime
+
 try: import simplejson as json
 except ImportError: import json
-
 from django.core.exceptions import ObjectDoesNotExist
 
 
@@ -66,11 +67,19 @@ def json_unserialize_dict(dikt):
 
 
 def json_serialize_value(value):
+    if isinstance(value, datetime.datetime):
+        value = datetime.datetime.strftime(value, '%Y-%m-%d %H:%M:%S.%f')
     return json.dumps(value)
 
 
 def json_unserialize_value(value):
-    return json.loads(value)
+    value = json.loads(value)
+    if type(value) is str and len(value) is 26:
+        try:
+            value = datetime.datetime.strptime(value, '%Y-%m-%d %H:%M:%S.%f')
+        except ValueError:
+            pass
+    return value
 
 
 def serialize_queryset_arguments(hstore_fieldnames, *args, **kwargs):
