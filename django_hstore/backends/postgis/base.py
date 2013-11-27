@@ -2,11 +2,17 @@ import logging
 import re
 import sys
 import traceback
+
 from django import VERSION
 from django.conf import settings
-from django.db.backends.postgresql_psycopg2.base import *
+from django.contrib.gis.db.backends.postgis.base import DatabaseWrapper, PostGISCreation
 from django.db.backends.util import truncate_name
 from psycopg2.extras import register_hstore
+
+try:
+    from django.db.backends.postgresql_psycopg2.version import get_version
+except ImportError:
+    get_version = lambda c: c._version[0] * 10**4 + c._version[1] * 10**2
 
 
 log = logging.getLogger(__name__)
@@ -15,7 +21,7 @@ COMMENTS = re.compile(r'/\*.*?\*/', re.MULTILINE | re.DOTALL)
 COMMENTS2 = re.compile(r'--.*?$', re.MULTILINE)
 
 
-class DatabaseCreation(DatabaseCreation):
+class DatabaseCreation(PostGISCreation):
     def executescript(self, path, title='SQL'):
         """
         Load up a SQL script file and execute.
@@ -45,10 +51,16 @@ class DatabaseCreation(DatabaseCreation):
             print >> sys.stderr, message
             traceback.print_exc()
 
-    def install_hstore_contrib(self):
+    def _create_test_db(self, verbosity, autoclobber):
+        test_database_name = super(DatabaseCreation, self)._create_test_db(verbosity, autoclobber)
+        self.install_hstore_contrib(test_database_name)
+        register_hstore(self.connection.connection, globally=True, unicode=True)
+        
+        return test_database_name
+
+    def install_hstore_contrib(self, test_database_name):
         # point to test database
         self.connection.close()
-        test_database_name = self._get_test_db_name()
         self.connection.settings_dict["NAME"] = test_database_name
         # Test to see if HSTORE type was already installed
         cursor = self.connection.cursor()
@@ -56,7 +68,7 @@ class DatabaseCreation(DatabaseCreation):
         if cursor.fetchone():
             # skip if already exists
             return
-        if self.connection._version[0:2]>=(9,1):
+        if get_version(self.connection) >= 90100:
             cursor.execute("create extension hstore;")
             self.connection.commit_unless_managed()
             return
@@ -95,11 +107,6 @@ class DatabaseCreation(DatabaseCreation):
             log.warning(message)
             print >> sys.stderr, message
 
-    def _create_test_db(self, verbosity, autoclobber):
-        super(DatabaseCreation, self)._create_test_db(verbosity, autoclobber)
-        self.install_hstore_contrib()
-        register_hstore(self.connection.connection, globally=True, unicode=True)
-
     def sql_indexes_for_field(self, model, f, style):
         kwargs = VERSION[:2] >= (1, 3) and {'connection': self.connection} or {}
         if f.db_type(**kwargs) == 'hstore':
@@ -109,11 +116,11 @@ class DatabaseCreation(DatabaseCreation):
             qn = self.connection.ops.quote_name
             index_name = '%s_%s_gist' % (model._meta.db_table, f.column)
             clauses = [style.SQL_KEYWORD('CREATE INDEX'),
-                style.SQL_TABLE(qn(truncate_name(index_name, self.connection.ops.max_name_length()))),
-                style.SQL_KEYWORD('ON'),
-                style.SQL_TABLE(qn(model._meta.db_table)),
-                style.SQL_KEYWORD('USING GIST'),
-                '(%s)' % style.SQL_FIELD(qn(f.column))]
+                       style.SQL_TABLE(qn(truncate_name(index_name, self.connection.ops.max_name_length()))),
+                       style.SQL_KEYWORD('ON'),
+                       style.SQL_TABLE(qn(model._meta.db_table)),
+                       style.SQL_KEYWORD('USING GIST'),
+                       '(%s)' % style.SQL_FIELD(qn(f.column))]
             # add tablespace clause
             tablespace = f.db_tablespace or model._meta.db_tablespace
             if tablespace:
@@ -121,7 +128,7 @@ class DatabaseCreation(DatabaseCreation):
                 if sql:
                     clauses.append(sql)
             clauses.append(';')
-            return [ ' '.join(clauses) ]
+            return [' '.join(clauses)]
         return super(DatabaseCreation, self).sql_indexes_for_field(model, f, style)
 
 
