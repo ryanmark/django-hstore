@@ -7,9 +7,10 @@ from django.db.models.sql.query import Query
 from django.db.models.sql.subqueries import UpdateQuery
 from django.db.models.sql.where import EmptyShortCircuit, WhereNode
 
-from django.contrib.gis.db.models.query import GeoQuerySet
-from django.contrib.gis.db.models.sql.query import GeoQuery
-from django.contrib.gis.db.models.sql.where import GeoWhereNode, GeoConstraint
+try:
+    from django.db.models.sql.where import QueryWrapper  # django <= 1.3
+except ImportError:
+    from django.db.models.query_utils import QueryWrapper  # django >= 1.4
 
 
 class literal_clause(object):
@@ -18,12 +19,6 @@ class literal_clause(object):
 
     def as_sql(self, qn, connection):
         return self.clause
-
-
-try:
-    from django.db.models.sql.where import QueryWrapper  # django <= 1.3
-except ImportError:
-    from django.db.models.query_utils import QueryWrapper  # django >= 1.4
 
 
 def select_query(method):
@@ -116,30 +111,10 @@ class HStoreWhereNode(WhereNode):
     make_hstore_atom = make_atom
 
 
-class HStoreGeoWhereNode(HStoreWhereNode, GeoWhereNode):
-    
-    def make_atom(self, child, qn, connection):
-        lvalue, lookup_type, value_annot, params_or_value = child
-        
-        # if spatial query
-        if isinstance(lvalue, GeoConstraint):
-            return GeoWhereNode.make_atom(self, child, qn, connection)
-        
-        # else might be an HSTORE query
-        return HStoreWhereNode.make_atom(self, child, qn, connection)
-
-
 class HStoreQuery(Query):
 
     def __init__(self, model):
         super(HStoreQuery, self).__init__(model, HStoreWhereNode)
-
-
-class HStoreGeoQuery(GeoQuery, Query):
-    
-    def __init__(self, *args, **kwargs):
-        model = kwargs.pop('model', None) or args[0]
-        super(HStoreGeoQuery, self).__init__(model, HStoreGeoWhereNode)
 
 
 class HStoreQuerySet(QuerySet):
@@ -201,8 +176,36 @@ class HStoreQuerySet(QuerySet):
         return query
 
 
-class HStoreGeoQuerySet(HStoreQuerySet, GeoQuerySet):
+try:
+    from django.contrib.gis.db.models.query import GeoQuerySet
+    from django.contrib.gis.db.models.sql.query import GeoQuery
+    from django.contrib.gis.db.models.sql.where import GeoWhereNode, GeoConstraint
 
-    def __init__(self, model=None, query=None, using=None):
-        query = query or HStoreGeoQuery(model)
-        super(HStoreGeoQuerySet, self).__init__(model=model, query=query, using=using)
+    class HStoreGeoQuery(GeoQuery, Query):
+        
+        def __init__(self, *args, **kwargs):
+            model = kwargs.pop('model', None) or args[0]
+            super(HStoreGeoQuery, self).__init__(model, HStoreGeoWhereNode)
+
+
+    class HStoreGeoQuerySet(HStoreQuerySet, GeoQuerySet):
+
+        def __init__(self, model=None, query=None, using=None):
+            query = query or HStoreGeoQuery(model)
+            super(HStoreGeoQuerySet, self).__init__(model=model, query=query, using=using)
+
+
+    class HStoreGeoWhereNode(HStoreWhereNode, GeoWhereNode):
+        
+        def make_atom(self, child, qn, connection):
+            lvalue, lookup_type, value_annot, params_or_value = child
+            
+            # if spatial query
+            if isinstance(lvalue, GeoConstraint):
+                return GeoWhereNode.make_atom(self, child, qn, connection)
+            
+            # else might be an HSTORE query
+            return HStoreWhereNode.make_atom(self, child, qn, connection)
+
+except ImportError:
+    pass
