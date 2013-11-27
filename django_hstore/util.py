@@ -79,9 +79,13 @@ def serialize_queryset_arguments(hstore_fieldnames, *args, **kwargs):
         # a) the filter has double underscores (data__contains={'a': 1}), rather
         #    than equivalence filters (data={'a': 1, 'b': 2}) where serialization
         #    takes place in DictionaryField.get_prep_value().
-        # b) the field being used for the filter is provided as a string in the 
-        #    hstore_fieldnames tuple used when declaring the manager in the object
-        #    model.
+        # b) the field name that the data is being filtered by is provided as a
+        #    string in the  hstore_fieldnames tuple used when declaring the manager
+        #    in the object model.
+        # c) the filter value is a dict or a numeral
         if (len(k.split('__')) > 1) and (k.split('__')[0] in hstore_fieldnames):
-            kwargs[k] = json_serialize_dict(v)
+            if isinstance(v, dict):
+                kwargs[k] = json_serialize_dict(v)
+            if isinstance(v, int) or isinstance(v, float):
+                kwargs[k] = json_serialize_value(v)
     return kwargs
