@@ -1,0 +1,241 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Django-hstore by alukach</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1>Django-hstore</h1>
+        <p>Fork of django-hstore to support automatic JSON serialization of dictionary values.</p>
+
+        <p class="view"><a href="https://github.com/alukach/django-hstore">View the Project on GitHub <small>alukach/django-hstore</small></a></p>
+
+
+        <ul>
+          <li><a href="https://github.com/alukach/django-hstore/zipball/master">Download <strong>ZIP File</strong></a></li>
+          <li><a href="https://github.com/alukach/django-hstore/tarball/master">Download <strong>TAR Ball</strong></a></li>
+          <li><a href="https://github.com/alukach/django-hstore">View On <strong>GitHub</strong></a></li>
+        </ul>
+      </header>
+      <section>
+        <h1>
+<a name="django-hstore" class="anchor" href="#django-hstore"><span class="octicon octicon-link"></span></a>django-hstore</h1>
+
+<p>Django-hstore is a niche library which integrates the <a href="http://www.postgresql.org/docs/9.0/interactive/hstore.html">hstore</a> extension of PostgreSQL into Django.</p>
+
+<p>Dependencies:</p>
+
+<ul>
+<li><strong>Django 1.2+</strong></li>
+<li><strong>PostgreSQL 9.0+</strong></li>
+<li>
+<strong>Psycopg 2.3+</strong>.</li>
+</ul><h2>
+<a name="fork-features" class="anchor" href="#fork-features"><span class="octicon octicon-link"></span></a>Fork features</h2>
+
+<p>This fork aims to:</p>
+
+<ul>
+<li>support data-types beyond strings.  To do so, all values entered in to / retrived from django-hstore are serialized to / from JSON.</li>
+<li>This fork aims to support spatial querysets. Now supported only Postgis backend.</li>
+</ul><h3>
+<a name="summary-of-work" class="anchor" href="#summary-of-work"><span class="octicon octicon-link"></span></a>Summary of work</h3>
+
+<ul>
+<li>All data entered in to a <code>hstore.DictionaryField</code> is serialized upon entrance into the db via its <code>get_prep_value()</code> method and unserialized upon retrieval via its <code>to_python()</code> method.</li>
+<li>When declaring the <code>django_hstore.hstore.Manager</code> field, you can optionally pass in a tuple of fieldname strings indicating which fields are of type <code>hstoreDictionaryField</code>. This allows the object manager to serialize any arguments provided when using the <code>filter</code> or <code>exclude</code> method of the <code>django_hstore.hstore.Manager</code> object.</li>
+</ul><h2>
+<a name="limitations" class="anchor" href="#limitations"><span class="octicon octicon-link"></span></a>Limitations</h2>
+
+<ul>
+<li>Due to how Django implements its ORM, you will need to use the custom <code>postgresql_psycopg2</code> backend
+defined in this package, which naturally will prevent you from dropping in other django extensions
+which require a custom backend (unless you fork and combine).</li>
+<li>PostgreSQL's implementation of hstore has no concept of type; it stores a mapping of string keys to
+string values. <del>This library makes no attempt to coerce keys or values to strings.</del> As such, this library encodes all values to JSON.</li>
+</ul><h2>
+<a name="running-the-tests" class="anchor" href="#running-the-tests"><span class="octicon octicon-link"></span></a>Running the tests</h2>
+
+<p>Assuming one has the dependencies installed, and a <strong>PostgreSQL 9.0+</strong> server up and
+running::</p>
+
+<pre><code>python setup.py test
+</code></pre>
+
+<p>You might need to tweak the DB settings according to your DB configuration.
+You can copy the file settings.py and create <strong>local_settings.py</strong>, which will
+be used instead of the default settings.py.</p>
+
+<p>If after running this command you get an <strong>error</strong> saying::</p>
+
+<pre><code>type "hstore" does not exist
+</code></pre>
+
+<p>Try this::</p>
+
+<pre><code>psql template1 -c 'create extension hstore;'
+</code></pre>
+
+<p>More details here: <a href="http://clarkdave.net/2012/09/postgresql-error-type-hstore-does-not-exist/">PostgreSQL error type hstore does not exist</a></p>
+
+<h2>
+<a name="usage" class="anchor" href="#usage"><span class="octicon octicon-link"></span></a>Usage</h2>
+
+<p>First, update your settings module to specify the custom database backend::</p>
+
+<pre><code>DATABASES = {
+    'default': {
+        'ENGINE': 'django_hstore.backends.postgresql_psycopg2',
+        # or
+        # 'ENGINE': 'django_hstore.backends.postgis',
+        ...
+    }
+}
+</code></pre>
+
+<p><strong>Note to South users:</strong> If you keep getting errors like <code>There is no South
+database module 'south.db.None' for your database.</code>, add the following to
+<code>settings.py</code>::</p>
+
+<pre><code>SOUTH_DATABASE_ADAPTERS = {'default': 'south.db.postgresql_psycopg2'}
+</code></pre>
+
+<p>The library provides three principal classes:</p>
+
+<ul>
+<li>
+<code>django_hstore.hstore.DictionaryField</code>
+
+<ul>
+<li>An ORM field which stores a mapping of string key/value pairs in an hstore column.</li>
+</ul>
+</li>
+<li>
+<code>django_hstore.hstore.ReferencesField</code>
+
+<ul>
+<li>An ORM field which builds on DictionaryField to store a mapping of string keys to django object references, much like ForeignKey.</li>
+</ul>
+</li>
+<li>
+<code>django_hstore.hstore.Manager</code>
+
+<ul>
+<li>An ORM manager which provides much of the query functionality of the library.</li>
+</ul>
+</li>
+</ul><p>Model definition is straightforward::</p>
+
+<pre><code>from django.db import models
+from django_hstore import hstore
+
+class Something(models.Model):
+    name = models.CharField(max_length=32)
+    data = hstore.DictionaryField(db_index=True)
+    objects = hstore.Manager()
+
+    def __unicode__(self):
+        return self.name
+</code></pre>
+
+<p>You then treat the <code>data</code> field as simply a dictionary of string pairs::</p>
+
+<pre><code>instance = Something.objects.create(name='something', data={'a': 1, 'b': '2'})
+assert instance.data['a'] == 1
+
+empty = Something.objects.create(name='empty')
+assert empty.data == {}
+
+empty.data['a'] = 1
+empty.save()
+assert Something.objects.get(name='something').data['a'] == 1
+</code></pre>
+
+<p>You can issue indexed queries against hstore fields::</p>
+
+<pre><code># equivalence
+Something.objects.filter(data={'a': 1, 'b': '2'})
+
+# comparision
+Something.objects.filter(data__gt={'a': 1})
+Something.objects.filter(data__gte={'a': 1})
+Something.objects.filter(data__lt={'a': '2'})
+Something.objects.filter(data__lte={'a': '2'})
+
+# subset by key/value mapping
+Something.objects.filter(data__contains={'a': 1})
+
+# subset by list of some key values
+Something.objects.filter(data__contains={'a': [1, '2']})
+
+# subset by list of keys
+Something.objects.filter(data__contains=['a', 'b'])
+
+# subset by single key
+Something.objects.filter(data__contains='a')
+</code></pre>
+
+<p>You can still do classic django "contains" lookups as you would normally do for normal text
+fields if you were looking for a particular string. In this case, the HSTORE field
+will be converted to text and the lookup will be performed on all the keys and all the values::</p>
+
+<pre><code>Something.objects.create(data={ 'some_key': 'some crazy Value' })
+
+# classic text lookup (look up for occurence of string in all the keys)
+Something.objects.filter(data__contains='crazy')
+Something.objects.filter(data__contains='some_key')
+# classic case insensitive text looup
+Something.objects.filter(data__icontains='value')
+Something.objects.filter(data__icontains='SOME_KEY')
+</code></pre>
+
+<p>You can also take advantage of some db-side functionality by using the manager::</p>
+
+<pre><code># identify the keys present in an hstore field
+&gt;&gt;&gt; Something.objects.hkeys(id=instance.id, attr='data')
+['a', 'b']
+
+# peek at a a named value within an hstore field
+&gt;&gt;&gt; Something.objects.hpeek(id=instance.id, attr='data', key='a')
+'1'
+
+# do the same, after filter
+&gt;&gt;&gt; Something.objects.filter(id=instance.id).hpeek(attr='data', key='a')
+'1'
+
+# remove a key/value pair from an hstore field
+&gt;&gt;&gt; Something.objects.filter(name='something').hremove('data', 'b')
+</code></pre>
+
+<p>The hstore methods on manager pass all keyword arguments aside from <code>attr</code> and <code>key</code>
+to <code>.filter()</code>.</p>
+      </section>
+      <footer>
+        <p>This project is maintained by <a href="https://github.com/alukach">alukach</a></p>
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
+      </footer>
+    </div>
+    <script src="javascripts/scale.fix.js"></script>
+              <script type="text/javascript">
+            var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+            document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+          </script>
+          <script type="text/javascript">
+            try {
+              var pageTracker = _gat._getTracker("UA-16401510-7");
+            pageTracker._trackPageview();
+            } catch(err) {}
+          </script>
+
+  </body>
+</html>
