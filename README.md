@@ -22,7 +22,7 @@ This fork aims to:
   * `Time`
   * `DateTime`
 * Support spatial querysets
-* Support `contains`, `icontains`, `lt`, `lte`, `gt`, and `gte` `filter` / `exclude` lookups
+* Support `contains`, `icontains`, `lt`, `lte`, `gt`, and `gte` operators in `filter`/`exclude` lookups
 
 
 ### Summary of work
