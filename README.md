@@ -12,8 +12,17 @@ Dependencies:
 
 This fork aims to:
 
-* support data-types beyond strings.  To do so, all values entered in to / retrived from django-hstore are serialized to / from JSON.
-* This fork aims to support spatial querysets. Now supported only Postgis backend.
+* Seemlessly support data-types beyond strings.  To do so, all values entered in-to/retrived-from django-hstore are serialized to/from JSON.  Data types supported:
+  * `Strings` _(natch)_
+  * `Int`
+  * `Float`
+  * `List`
+  * `Dict`
+  * `Date`
+  * `Time`
+  * `DateTime`
+* Support spatial querysets
+* Support `contains`, `icontains`, `lt`, `lte`, `gt`, and `gte` `filter` / `exclude` lookups
 
 
 ### Summary of work
