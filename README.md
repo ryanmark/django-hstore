@@ -21,7 +21,7 @@ This fork aims to:
   * `Date`
   * `Time`
   * `DateTime`
-* Support spatial querysets
+* Support spatial querysets _(thanks to merge from Nemesis Design's [django-hstore](https://github.com/nemesisdesign/django-hstore) fork)_
 * Support `contains`, `icontains`, `lt`, `lte`, `gt`, and `gte` operators in `filter`/`exclude` lookups
 
 
