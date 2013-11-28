@@ -54,16 +54,16 @@ def unserialize_references(references):
         return refs
 
 
-def json_serialize_dict(dikt):
-    return dict([(k, json_serialize_value(v)) for k,v in dikt.items()])
+def json_serialize_dict(d):
+    return dict([(k, json_serialize_value(v)) for k,v in d.items()])
 
 
-def json_unserialize_dict(dikt):
+def json_unserialize_dict(d):
     try:
-        dikt = dict([(k, json_unserialize_value(v)) for k,v in dikt.items()])
+        d = dict([(k, json_unserialize_value(v)) for k,v in d.items()])
     except TypeError:
         pass
-    return dikt
+    return d
 
 
 def json_serialize_value(value):
