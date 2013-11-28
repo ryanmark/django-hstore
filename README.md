@@ -13,14 +13,14 @@ Dependencies:
 This fork aims to:
 
 * Seemlessly support data-types beyond strings.  To do so, all values entered in-to/retrived-from django-hstore are serialized to/from JSON.  Data types supported:
-  * Strings (natch)
-  * Int
-  * Float
-  * List
-  * Dict
-  * Date
-  * Time
-  * DateTime
+  * `Strings` __(natch)__
+  * `Int`
+  * `Float`
+  * `List`
+  * `Dict`
+  * `Date`
+  * `Time`
+  * `DateTime`
 * Support spatial querysets
 * Support `contains`, `icontains`, `lt`, `lte`, `gt`, and `gte` `filter` / `exclude` lookups
 
