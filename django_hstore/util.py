@@ -96,12 +96,12 @@ def serialize_queryset_arguments(hstore_fieldnames, *args, **kwargs):
 
 
 def stringify_datetime(value):
-    if isinstance(value, datetime.date):
+    if isinstance(value, datetime.datetime):
+        value = datetime.datetime.strftime(value, '%Y-%m-%d %H:%M:%S.%f')
+    elif isinstance(value, datetime.date):
         value = datetime.date.strftime(value, '%Y-%m-%d')
     elif isinstance(value, datetime.time):
         value = datetime.time.strftime(value, '%H:%M:%S.%f')
-    elif isinstance(value, datetime.datetime):
-        value = datetime.datetime.strftime(value, '%Y-%m-%d %H:%M:%S.%f')
     return value
 
 
