@@ -12,7 +12,7 @@ Dependencies:
 
 This fork aims to:
 
-* Seemlessly support data-types beyond strings.  To do so, all values entered in to / retrived from django-hstore are serialized to / from JSON.  Data types supported:
+* Seemlessly support data-types beyond strings.  To do so, all values entered in-to/retrived-from django-hstore are serialized to/from JSON.  Data types supported:
   * Strings (natch)
   * Int
   * Float
