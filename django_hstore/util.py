@@ -72,7 +72,10 @@ def json_serialize_value(value):
 
 
 def json_unserialize_value(value):
-    value = json.loads(value)
+    try:
+        value = json.loads(value)
+    except ValueError:
+        pass
     value = destringify_datetime(value)
     return value
 
