@@ -28,7 +28,7 @@ This fork aims to:
 ### Summary of work
 
 * All data entered in to a `hstore.DictionaryField` is serialized upon entrance into the db via its `get_prep_value()` method and unserialized upon retrieval via its `to_python()` method.
-* When declaring the `django_hstore.hstore.Manager` field, you can optionally pass in a tuple of fieldname strings indicating which fields are of type `hstoreDictionaryField`. This allows the object manager to serialize any arguments provided when using the `filter` or `exclude` method of the `django_hstore.hstore.Manager` object.
+* When declaring the `django_hstore.hstore.Manager` field, you can optionally pass in a tuple of fieldname strings indicating which fields are of type `hstoreDictionaryField`. This allows the object manager to serialize any arguments provided when using the `filter` or `exclude` method of the `django_hstore.hstore.HStoreManager` object.
 
 ## Limitations
 
@@ -84,7 +84,7 @@ The library provides three principal classes:
     * An ORM field which stores a mapping of string key/value pairs in an hstore column.
 * ``django_hstore.hstore.ReferencesField``
     * An ORM field which builds on DictionaryField to store a mapping of string keys to django object references, much like ForeignKey.
-* ``django_hstore.hstore.Manager``
+* ``django_hstore.hstore.HStoreManager``
     * An ORM manager which provides much of the query functionality of the library.
 
 Model definition is straightforward::
@@ -95,7 +95,7 @@ Model definition is straightforward::
     class Something(models.Model):
         name = models.CharField(max_length=32)
         data = hstore.DictionaryField(db_index=True)
-        objects = hstore.Manager()
+        objects = hstore.HStoreManager()
 
         def __unicode__(self):
             return self.name
